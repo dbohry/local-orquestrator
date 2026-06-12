@@ -3,16 +3,17 @@ package com.lhamacorp.orquestrator;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.model.Statistics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static java.lang.IO.println;
-
 public class ContainerStatsCollector {
 
+    private static final Logger log = LoggerFactory.getLogger(ContainerStatsCollector.class);
     private static final int STATS_TIMEOUT_SECONDS = 2;
 
     private final DockerClientFactory clientFactory;
@@ -26,7 +27,7 @@ public class ContainerStatsCollector {
     public Double getCpuPercent(String containerId, String nodeId) {
         String host = clusterConfig.getHostForNode(nodeId);
         if (host == null) {
-            println("No host configured for node: " + nodeId);
+            log.warn("No host configured for node: {}", nodeId);
             return null;
         }
 
@@ -51,7 +52,7 @@ public class ContainerStatsCollector {
 
                     @Override
                     public void onError(Throwable throwable) {
-                        println("Stats error on " + host + ": " + throwable.getMessage());
+                        log.error("Stats error on {}: {}", host, throwable.getMessage());
                         latch.countDown();
                     }
 
@@ -72,7 +73,8 @@ public class ContainerStatsCollector {
         try {
             latch.await(STATS_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            println("Stats timeout for container " + containerId);
+            log.warn("Stats timeout for container {}", containerId);
+            Thread.currentThread().interrupt();
             return null;
         }
 

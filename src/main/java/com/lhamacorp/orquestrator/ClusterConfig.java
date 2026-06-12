@@ -2,15 +2,16 @@ package com.lhamacorp.orquestrator;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.SwarmNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.lang.IO.println;
-
 public class ClusterConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(ClusterConfig.class);
     private static final int DEFAULT_DOCKER_PORT = 2375;
 
     private final int dockerPort;
@@ -28,17 +29,12 @@ public class ClusterConfig {
             String ip = node.getStatus().getAddress();
             nodeIps.put(id, ip);
         }
-        println("Discovered " + nodeIps.size() + " nodes from Swarm API");
+        log.debug("Discovered {} nodes from Swarm API", nodeIps.size());
     }
 
     public String getHostForNode(String nodeId) {
         String ip = nodeIps.get(nodeId);
         return ip != null ? dockerUri(ip) : null;
-    }
-
-    public void refresh(DockerClient managerClient) {
-        nodeIps.clear();
-        loadNodes(managerClient);
     }
 
     private String dockerUri(String ip) {

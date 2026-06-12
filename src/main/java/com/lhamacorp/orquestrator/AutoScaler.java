@@ -3,6 +3,8 @@ package com.lhamacorp.orquestrator;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Service;
 import com.github.dockerjava.api.model.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -13,10 +15,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static com.github.dockerjava.api.model.TaskState.RUNNING;
-import static java.lang.IO.println;
 import static java.util.Optional.ofNullable;
 
 public class AutoScaler {
+
+    private static final Logger log = LoggerFactory.getLogger(AutoScaler.class);
 
     private final DockerClient managerClient;
     private final ContainerStatsCollector statsCollector;
@@ -42,7 +45,7 @@ public class AutoScaler {
             double avgCpu = collectServiceCpu(service);
             if (Double.isNaN(avgCpu)) return;
 
-            println(spec.getName() + " - Load: ~" + String.format("%.2f", avgCpu) + "%" + " - " + policy.min() + "/" + policy.max() + " (" + currentReplicas + ")");
+            log.info("{} - Load: ~{}% - {}/{} ({})", spec.getName(), String.format("%.2f", avgCpu), policy.min(), policy.max(), currentReplicas);
 
             long newReplicas = policy.decide(currentReplicas, avgCpu);
             if (newReplicas != currentReplicas) {
@@ -84,12 +87,12 @@ public class AutoScaler {
     }
 
     private void scale(Service service, long from, long to) {
-        println("Scale " + (to > from ? "UP" : "DOWN") + ": " + from + " -> " + to);
+        log.info("Scale {}: {} -> {}", to > from ? "UP" : "DOWN", from, to);
         var updatedSpec = service.getSpec();
         updatedSpec.getMode().getReplicated().withReplicas((int) to);
         managerClient.updateServiceCmd(service.getId(), updatedSpec)
                 .withVersion(service.getVersion().getIndex())
                 .exec();
-        println("Updated service " + updatedSpec.getName() + " to " + to + " replicas");
+        log.info("Updated service {} to {} replicas", updatedSpec.getName(), to);
     }
 }

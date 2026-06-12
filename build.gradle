@@ -11,6 +11,7 @@ repositories {
 dependencies {
     implementation 'com.github.docker-java:docker-java-core:3.4.0'
     implementation 'com.github.docker-java:docker-java-transport-httpclient5:3.4.0'
+    implementation 'org.slf4j:slf4j-simple:1.7.36'
 
     testImplementation platform('org.junit:junit-bom:6.0.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
