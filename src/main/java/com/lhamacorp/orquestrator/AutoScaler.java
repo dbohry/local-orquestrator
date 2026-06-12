@@ -87,12 +87,11 @@ public class AutoScaler {
     }
 
     private void scale(Service service, long from, long to) {
-        log.info("Scale {}: {} -> {}", to > from ? "UP" : "DOWN", from, to);
         var updatedSpec = service.getSpec();
         updatedSpec.getMode().getReplicated().withReplicas((int) to);
         managerClient.updateServiceCmd(service.getId(), updatedSpec)
                 .withVersion(service.getVersion().getIndex())
                 .exec();
-        log.info("Updated service {} to {} replicas", updatedSpec.getName(), to);
+        log.info("{} scale {}: {} -> {}", service.getSpec().getName(), to > from ? "UP" : "DOWN", from, to);
     }
 }

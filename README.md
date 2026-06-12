@@ -49,6 +49,22 @@ Add these labels to any Swarm service to enable auto-scaling:
 | `DOCKER_API_PORT` | `2375` | Port used to reach the Docker API on worker nodes |
 | `FREQUENCY` | `60000` | Polling interval in milliseconds |
 
+## Stack Example
+
+```yaml
+services:
+  orquestrator:
+    image: dbohry/local-orquestrator:latest
+    network_mode: "host"
+    environment:
+      - MANAGER_HOST=tcp://swarm-manager:2375
+    deploy:
+      update_config:
+        order: start-first
+      placement:
+        constraints: [node.role == manager]
+```
+
 ## Build & Run
 
 ```bash
