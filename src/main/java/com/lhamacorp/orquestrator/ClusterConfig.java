@@ -1,9 +1,8 @@
 package com.lhamacorp.orquestrator;
 
-import org.yaml.snakeyaml.Yaml;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.model.SwarmNode;
 
-import java.io.InputStream;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,60 +11,37 @@ import static java.lang.IO.println;
 
 public class ClusterConfig {
 
-    private final Map<String, NodeInfo> nodes = new HashMap<>();
-    private String managerHost;
-    private int dockerPort;
+    private static final int DEFAULT_DOCKER_PORT = 2375;
 
-    public ClusterConfig() {
-        loadFromClasspath();
+    private final int dockerPort;
+    private final Map<String, String> nodeIps = new HashMap<>();
+
+    public ClusterConfig(DockerClient managerClient) {
+        this.dockerPort = Integer.parseInt(System.getenv().getOrDefault("DOCKER_API_PORT", String.valueOf(DEFAULT_DOCKER_PORT)));
+        loadNodes(managerClient);
     }
 
-    private void loadFromClasspath() {
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("application.yml")) {
-            if (input == null) {
-                println("application.yml not found");
-                return;
-            }
-            Yaml yaml = new Yaml();
-            Map<String, Object> config = yaml.load(input);
-            Map<String, Object> cluster = (Map<String, Object>) config.get("cluster");
-            String managerId = (String) cluster.get("manager");
-            dockerPort = (int) cluster.getOrDefault("docker-port", 2375);
-            List<Map<String, Object>> nodeList = (List<Map<String, Object>>) cluster.get("nodes");
-
-            for (Map<String, Object> node : nodeList) {
-                String id = (String) node.get("id");
-                String ip = (String) node.get("ip");
-                nodes.put(id, new NodeInfo(id, ip));
-            }
-
-            if (managerId != null && nodes.containsKey(managerId)) {
-                managerHost = nodes.get(managerId).ip();
-            }
-
-            println("Loaded " + nodes.size() + " nodes from config (manager: " + managerId + ")");
-        } catch (Exception e) {
-            println("Error loading node config: " + e.getMessage());
+    private void loadNodes(DockerClient managerClient) {
+        List<SwarmNode> nodes = managerClient.listSwarmNodesCmd().exec();
+        for (SwarmNode node : nodes) {
+            String id = node.getId();
+            String ip = node.getStatus().getAddress();
+            nodeIps.put(id, ip);
         }
+        println("Discovered " + nodeIps.size() + " nodes from Swarm API");
     }
 
     public String getHostForNode(String nodeId) {
-        NodeInfo info = nodes.get(nodeId);
-        return info != null ? dockerUri(info.ip()) : null;
+        String ip = nodeIps.get(nodeId);
+        return ip != null ? dockerUri(ip) : null;
     }
 
-    public String managerUri() {
-        return dockerUri(managerHost);
-    }
-
-    public Collection<NodeInfo> getAllNodes() {
-        return nodes.values();
+    public void refresh(DockerClient managerClient) {
+        nodeIps.clear();
+        loadNodes(managerClient);
     }
 
     private String dockerUri(String ip) {
         return "tcp://" + ip + ":" + dockerPort;
-    }
-
-    public record NodeInfo(String id, String ip) {
     }
 }

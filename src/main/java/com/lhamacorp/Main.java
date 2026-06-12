@@ -10,14 +10,16 @@ import static java.lang.IO.println;
 
 public class Main {
 
+    private static final String MANAGER_HOST = System.getenv().getOrDefault("MANAGER_HOST", "tcp://localhost:2375");
+
     static void main() throws InterruptedException {
-        ClusterConfig clusterConfig = new ClusterConfig();
         DockerClientFactory clientFactory = new DockerClientFactory();
+        DockerClient managerClient = clientFactory.forHost(MANAGER_HOST);
+        ClusterConfig clusterConfig = new ClusterConfig(managerClient);
         ContainerStatsCollector statsCollector = new ContainerStatsCollector(clientFactory, clusterConfig);
-        DockerClient managerClient = clientFactory.forHost(clusterConfig.managerUri());
         AutoScaler autoScaler = new AutoScaler(managerClient, statsCollector);
 
-        println("Orchestrator running. Manager: " + clusterConfig.managerUri());
+        println("Orchestrator running. Manager: " + MANAGER_HOST);
 
         while (true) {
             autoScaler.evaluate();
