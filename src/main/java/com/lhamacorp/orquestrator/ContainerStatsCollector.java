@@ -13,7 +13,7 @@ import static java.lang.IO.println;
 
 public class ContainerStatsCollector {
 
-    private static final int STATS_TIMEOUT_SECONDS = 5;
+    private static final int STATS_TIMEOUT_SECONDS = 2;
 
     private final DockerClientFactory clientFactory;
     private final ClusterConfig clusterConfig;

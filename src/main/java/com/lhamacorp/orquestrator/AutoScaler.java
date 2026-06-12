@@ -4,10 +4,13 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Service;
 import com.github.dockerjava.api.model.Task;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static com.github.dockerjava.api.model.TaskState.RUNNING;
 import static java.lang.IO.println;
@@ -39,7 +42,7 @@ public class AutoScaler {
             double avgCpu = collectServiceCpu(service);
             if (Double.isNaN(avgCpu)) return;
 
-            println("Service: " + spec.getName() + " - Average CPU: " + avgCpu + "%" + " - Range: " + policy.min() + " to " + policy.max() + " - Current: " + currentReplicas);
+            println(spec.getName() + " - Load: ~" + String.format("%.2f", avgCpu) + "%" + " - " + policy.min() + "/" + policy.max() + " (" + currentReplicas + ")");
 
             long newReplicas = policy.decide(currentReplicas, avgCpu);
             if (newReplicas != currentReplicas) {
@@ -54,24 +57,30 @@ public class AutoScaler {
                 .withStateFilter(RUNNING)
                 .exec();
 
-        List<Double> cpuValues = new ArrayList<>();
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Future<Double>> futures = tasks.stream()
+                    .filter(task -> {
+                        var cs = task.getStatus().getContainerStatus();
+                        return cs != null && cs.getContainerID() != null && !cs.getContainerID().isEmpty() && task.getNodeId() != null;
+                    })
+                    .map(task -> executor.submit(() -> statsCollector.getCpuPercent(
+                            task.getStatus().getContainerStatus().getContainerID(),
+                            task.getNodeId()
+                    )))
+                    .toList();
 
-        for (Task task : tasks) {
-            var containerStatus = task.getStatus().getContainerStatus();
-            if (containerStatus == null) continue;
+            double[] cpuValues = futures.stream()
+                    .map(f -> {
+                        try { return f.get(); }
+                        catch (Exception e) { return null; }
+                    })
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .toArray();
 
-            String containerId = containerStatus.getContainerID();
-            String nodeId = task.getNodeId();
-            if (containerId == null || containerId.isEmpty() || nodeId == null) continue;
-
-            Double cpu = statsCollector.getCpuPercent(containerId, nodeId);
-            if (cpu != null) {
-                cpuValues.add(cpu);
-            }
+            if (cpuValues.length == 0) return Double.NaN;
+            return java.util.Arrays.stream(cpuValues).average().orElse(Double.NaN);
         }
-
-        if (cpuValues.isEmpty()) return Double.NaN;
-        return cpuValues.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
     }
 
     private void scale(Service service, long from, long to) {
