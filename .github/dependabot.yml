@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "07:50"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      minor-and-patch-updates:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: github-actions
+    directory: "/"
+    groups:
+      all:
+        patterns:
+          - "*"
+    schedule:
+      interval: weekly
+      time: "07:51"
