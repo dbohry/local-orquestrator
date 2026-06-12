@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static com.github.dockerjava.api.model.TaskState.RUNNING;
@@ -61,7 +60,7 @@ public class AutoScaler {
             );
 
             if (scaling) {
-                scale(service, current, target);
+                scale(service, target);
             }
         });
     }
@@ -101,9 +100,9 @@ public class AutoScaler {
         }
     }
 
-    private void scale(Service service, long from, long to) {
+    private void scale(Service service, long target) {
         var updatedSpec = service.getSpec();
-        updatedSpec.getMode().getReplicated().withReplicas((int) to);
+        updatedSpec.getMode().getReplicated().withReplicas((int) target);
         managerClient.updateServiceCmd(service.getId(), updatedSpec)
                 .withVersion(service.getVersion().getIndex())
                 .exec();
