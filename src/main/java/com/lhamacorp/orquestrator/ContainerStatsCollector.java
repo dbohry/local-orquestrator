@@ -24,20 +24,20 @@ public class ContainerStatsCollector {
     }
 
     public Double getCpuPercent(String containerId, String nodeId) {
-        String socket = clusterConfig.getSocketForNode(nodeId);
-        if (socket == null) {
-            println("No socket configured for node: " + nodeId);
+        String host = clusterConfig.getHostForNode(nodeId);
+        if (host == null) {
+            println("No host configured for node: " + nodeId);
             return null;
         }
 
-        DockerClient nodeClient = clientFactory.forSocket(socket);
-        Statistics stats = fetchStats(nodeClient, containerId, socket);
+        DockerClient nodeClient = clientFactory.forHost(host);
+        Statistics stats = fetchStats(nodeClient, containerId, host);
         if (stats == null) return null;
 
         return calculateCpuPercent(stats);
     }
 
-    private Statistics fetchStats(DockerClient client, String containerId, String socket) {
+    private Statistics fetchStats(DockerClient client, String containerId, String host) {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Statistics> statsRef = new AtomicReference<>();
 
@@ -51,7 +51,7 @@ public class ContainerStatsCollector {
 
                     @Override
                     public void onError(Throwable throwable) {
-                        println("Stats error on " + socket + ": " + throwable.getMessage());
+                        println("Stats error on " + host + ": " + throwable.getMessage());
                         latch.countDown();
                     }
 

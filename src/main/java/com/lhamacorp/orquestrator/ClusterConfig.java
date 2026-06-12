@@ -13,7 +13,8 @@ import static java.lang.IO.println;
 public class ClusterConfig {
 
     private final Map<String, NodeInfo> nodes = new HashMap<>();
-    private String managerSocket;
+    private String managerHost;
+    private int dockerPort;
 
     public ClusterConfig() {
         loadFromClasspath();
@@ -29,17 +30,17 @@ public class ClusterConfig {
             Map<String, Object> config = yaml.load(input);
             Map<String, Object> cluster = (Map<String, Object>) config.get("cluster");
             String managerId = (String) cluster.get("manager");
+            dockerPort = (int) cluster.getOrDefault("docker-port", 2375);
             List<Map<String, Object>> nodeList = (List<Map<String, Object>>) cluster.get("nodes");
 
             for (Map<String, Object> node : nodeList) {
                 String id = (String) node.get("id");
                 String ip = (String) node.get("ip");
-                String socket = (String) node.get("socket");
-                nodes.put(id, new NodeInfo(id, ip, socket));
+                nodes.put(id, new NodeInfo(id, ip));
             }
 
             if (managerId != null && nodes.containsKey(managerId)) {
-                managerSocket = nodes.get(managerId).socket();
+                managerHost = nodes.get(managerId).ip();
             }
 
             println("Loaded " + nodes.size() + " nodes from config (manager: " + managerId + ")");
@@ -48,19 +49,23 @@ public class ClusterConfig {
         }
     }
 
-    public String getSocketForNode(String nodeId) {
+    public String getHostForNode(String nodeId) {
         NodeInfo info = nodes.get(nodeId);
-        return info != null ? info.socket() : null;
+        return info != null ? dockerUri(info.ip()) : null;
     }
 
-    public String managerSocket() {
-        return managerSocket;
+    public String managerUri() {
+        return dockerUri(managerHost);
     }
 
     public Collection<NodeInfo> getAllNodes() {
         return nodes.values();
     }
 
-    public record NodeInfo(String id, String ip, String socket) {
+    private String dockerUri(String ip) {
+        return "tcp://" + ip + ":" + dockerPort;
+    }
+
+    public record NodeInfo(String id, String ip) {
     }
 }

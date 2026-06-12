@@ -1,12 +1,10 @@
 cluster:
   manager: "bx4wj63r8hcrnrruu0mn88ukq"
+  docker-port: 2375
   nodes:
     - id: "oxr6ppo2ydqxli855sliqxe7y"
       ip: "192.168.178.11"
-      socket: "/tmp/docker-jupiter.sock"
     - id: "dbgpuh39tusj7324it919tu0l"
       ip: "192.168.178.12"
-      socket: "/tmp/docker-mars.sock"
     - id: "bx4wj63r8hcrnrruu0mn88ukq"
       ip: "192.168.178.10"
-      socket: "/tmp/docker-saturn.sock"

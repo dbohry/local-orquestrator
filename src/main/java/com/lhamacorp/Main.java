@@ -5,28 +5,22 @@ import com.lhamacorp.orquestrator.AutoScaler;
 import com.lhamacorp.orquestrator.ClusterConfig;
 import com.lhamacorp.orquestrator.ContainerStatsCollector;
 import com.lhamacorp.orquestrator.DockerClientFactory;
-import com.lhamacorp.orquestrator.SshTunnelManager;
+
+import static java.lang.IO.println;
 
 public class Main {
 
     static void main() throws InterruptedException {
-        while(true) {
-            ClusterConfig clusterConfig = new ClusterConfig();
-            SshTunnelManager tunnelManager = new SshTunnelManager();
+        ClusterConfig clusterConfig = new ClusterConfig();
+        DockerClientFactory clientFactory = new DockerClientFactory();
+        ContainerStatsCollector statsCollector = new ContainerStatsCollector(clientFactory, clusterConfig);
+        DockerClient managerClient = clientFactory.forHost(clusterConfig.managerUri());
+        AutoScaler autoScaler = new AutoScaler(managerClient, statsCollector);
 
-            tunnelManager.startTunnels(clusterConfig);
+        println("Orchestrator running. Manager: " + clusterConfig.managerUri());
 
-            try {
-                DockerClientFactory clientFactory = new DockerClientFactory();
-                ContainerStatsCollector statsCollector = new ContainerStatsCollector(clientFactory, clusterConfig);
-                DockerClient managerClient = clientFactory.forSocket(clusterConfig.managerSocket());
-                AutoScaler autoScaler = new AutoScaler(managerClient, statsCollector);
-
-                autoScaler.evaluate();
-            } finally {
-                tunnelManager.stopTunnels();
-            }
-
+        while (true) {
+            autoScaler.evaluate();
             Thread.sleep(60000);
         }
     }
