@@ -43,15 +43,25 @@ public class AutoScaler {
             if (!"true".equals(labels.get("autoscaling"))) return;
 
             ScalingPolicy policy = ScalingPolicy.fromLabels(labels);
-            long currentReplicas = spec.getMode().getReplicated().getReplicas();
+            long current = spec.getMode().getReplicated().getReplicas();
             double avgCpu = collectServiceCpu(service);
             if (Double.isNaN(avgCpu)) return;
 
-            log.debug("{} - Load: ~{}% - {}/{} ({})", spec.getName(), String.format("%.2f", avgCpu), policy.min(), policy.max(), currentReplicas);
+            long target = policy.decide(current, avgCpu);
+            boolean scaling = target != current;
 
-            long newReplicas = policy.decide(currentReplicas, avgCpu);
-            if (newReplicas != currentReplicas) {
-                scale(service, currentReplicas, newReplicas);
+            log.info("Service: {} | Load: {}% | Replicas: {}/{} (Limits: {}-{}) | Action: {}",
+                    spec.getName(),
+                    String.format("%.2f", avgCpu),
+                    current,
+                    target,
+                    policy.min(),
+                    policy.max(),
+                    scaling ? ("SCALE " + (target > current ? "UP" : "DOWN")) : "NONE"
+            );
+
+            if (scaling) {
+                scale(service, current, target);
             }
         });
     }
@@ -97,6 +107,5 @@ public class AutoScaler {
         managerClient.updateServiceCmd(service.getId(), updatedSpec)
                 .withVersion(service.getVersion().getIndex())
                 .exec();
-        log.info("{} scale {}: {} -> {}", service.getSpec().getName(), to > from ? "UP" : "DOWN", from, to);
     }
 }
