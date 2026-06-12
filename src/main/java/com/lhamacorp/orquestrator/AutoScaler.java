@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
 
 import static com.github.dockerjava.api.model.TaskState.RUNNING;
 import static java.util.Optional.ofNullable;
+import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 
 public class AutoScaler {
 
@@ -60,7 +61,7 @@ public class AutoScaler {
                 .withStateFilter(RUNNING)
                 .exec();
 
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+        try (ExecutorService executor = newVirtualThreadPerTaskExecutor()) {
             List<Future<Double>> futures = tasks.stream()
                     .filter(task -> {
                         var cs = task.getStatus().getContainerStatus();
@@ -74,8 +75,11 @@ public class AutoScaler {
 
             double[] cpuValues = futures.stream()
                     .map(f -> {
-                        try { return f.get(); }
-                        catch (Exception e) { return null; }
+                        try {
+                            return f.get();
+                        } catch (Exception e) {
+                            return null;
+                        }
                     })
                     .filter(Objects::nonNull)
                     .mapToDouble(Double::doubleValue)

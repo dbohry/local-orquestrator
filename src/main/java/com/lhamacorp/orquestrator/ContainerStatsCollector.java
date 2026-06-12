@@ -11,6 +11,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class ContainerStatsCollector {
 
     private static final Logger log = LoggerFactory.getLogger(ContainerStatsCollector.class);
@@ -71,7 +73,7 @@ public class ContainerStatsCollector {
                 });
 
         try {
-            latch.await(STATS_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            latch.await(STATS_TIMEOUT_SECONDS, SECONDS);
         } catch (InterruptedException e) {
             log.warn("Stats timeout for container {}", containerId);
             Thread.currentThread().interrupt();

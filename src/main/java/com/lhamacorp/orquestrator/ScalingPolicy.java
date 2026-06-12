@@ -1,5 +1,7 @@
 package com.lhamacorp.orquestrator;
 
+import java.util.Map;
+
 public record ScalingPolicy(int min, int max, double scaleUpCpu, double scaleDownCpu) {
 
     public long decide(long currentReplicas, double avgCpu) {
@@ -11,7 +13,7 @@ public record ScalingPolicy(int min, int max, double scaleUpCpu, double scaleDow
         return currentReplicas;
     }
 
-    public static ScalingPolicy fromLabels(java.util.Map<String, String> labels) {
+    public static ScalingPolicy fromLabels(Map<String, String> labels) {
         int min = Integer.parseInt(labels.getOrDefault("min-replicas", "1"));
         int max = Integer.parseInt(labels.getOrDefault("max-replicas", "5"));
         double scaleUpCpu = Double.parseDouble(labels.getOrDefault("scale-up-cpu", "70"));
