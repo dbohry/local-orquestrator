@@ -47,7 +47,7 @@ public class AutoScaler {
             double avgCpu = collectServiceCpu(service);
             if (Double.isNaN(avgCpu)) return;
 
-            log.info("{} - Load: ~{}% - {}/{} ({})", spec.getName(), String.format("%.2f", avgCpu), policy.min(), policy.max(), currentReplicas);
+            log.debug("{} - Load: ~{}% - {}/{} ({})", spec.getName(), String.format("%.2f", avgCpu), policy.min(), policy.max(), currentReplicas);
 
             long newReplicas = policy.decide(currentReplicas, avgCpu);
             if (newReplicas != currentReplicas) {
