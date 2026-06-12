@@ -8,11 +8,11 @@ import com.lhamacorp.orquestrator.DockerClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
-import static java.lang.Thread.ofVirtual;
-import static java.util.concurrent.Executors.newScheduledThreadPool;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class Main {
 
@@ -34,15 +34,11 @@ public class Main {
     }
 
     static void run(AutoScaler autoScaler, long frequency) {
-        try (ScheduledExecutorService executor = newScheduledThreadPool(1, ofVirtual().factory())) {
-            executor.scheduleAtFixedRate(
-                    autoScaler::evaluate,
-                    0,
-                    frequency,
-                    TimeUnit.MILLISECONDS
-            );
+        CountDownLatch latch = new CountDownLatch(1);
 
-            Thread.currentThread().join();
+        try (ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor()) {
+            executor.scheduleAtFixedRate(autoScaler::evaluate, 0, frequency, MILLISECONDS);
+            latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
