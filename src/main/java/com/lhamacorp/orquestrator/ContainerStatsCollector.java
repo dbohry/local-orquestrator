@@ -82,15 +82,45 @@ public class ContainerStatsCollector {
     }
 
     private double calculateCpuPercent(Statistics stats) {
-        long deltaCpu = stats.getCpuStats().getCpuUsage().getTotalUsage()
-                - stats.getPreCpuStats().getCpuUsage().getTotalUsage();
-        long deltaSystem = stats.getCpuStats().getSystemCpuUsage()
-                - stats.getPreCpuStats().getSystemCpuUsage();
+        if (stats == null || stats.getCpuStats() == null || stats.getPreCpuStats() == null) {
+            return 0.0;
+        }
 
-        if (deltaSystem == 0) return 0.0;
+        var cpuStats = stats.getCpuStats();
+        var preCpuStats = stats.getPreCpuStats();
 
-        var percpuUsage = stats.getCpuStats().getCpuUsage().getPercpuUsage();
-        long numCpus = percpuUsage != null ? percpuUsage.size() : 1;
-        return (deltaCpu / (double) deltaSystem) * numCpus * 100;
+        long currentSystem = getValueOrZero(cpuStats.getSystemCpuUsage());
+        long preSystem = getValueOrZero(preCpuStats.getSystemCpuUsage());
+        long deltaSystem = currentSystem - preSystem;
+
+        if (deltaSystem <= 0) {
+            return 0.0;
+        }
+
+        var cpuUsage = cpuStats.getCpuUsage();
+        var preCpuUsage = preCpuStats.getCpuUsage();
+
+        if (cpuUsage == null || preCpuUsage == null) {
+            return 0.0;
+        }
+
+        long currentTotal = getValueOrZero(cpuUsage.getTotalUsage());
+        long preTotal = getValueOrZero(preCpuUsage.getTotalUsage());
+        long deltaCpu = currentTotal - preTotal;
+
+        if (deltaCpu <= 0) {
+            return 0.0;
+        }
+
+        var percpuUsage = cpuUsage.getPercpuUsage();
+        long numCpus = (percpuUsage != null && !percpuUsage.isEmpty())
+                ? percpuUsage.size()
+                : Math.max(1, cpuStats.getOnlineCpus());
+
+        return ((double) deltaCpu / deltaSystem) * numCpus * 100.0;
+    }
+
+    private long getValueOrZero(Long value) {
+        return value != null ? value : 0L;
     }
 }
