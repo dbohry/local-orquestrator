@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static com.github.dockerjava.api.model.TaskState.RUNNING;
+import static java.util.Arrays.stream;
 import static java.util.Optional.ofNullable;
 import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 
@@ -86,7 +87,7 @@ public class AutoScaler {
                     .toArray();
 
             if (cpuValues.length == 0) return Double.NaN;
-            return java.util.Arrays.stream(cpuValues).average().orElse(Double.NaN);
+            return stream(cpuValues).average().orElse(Double.NaN);
         }
     }
 
