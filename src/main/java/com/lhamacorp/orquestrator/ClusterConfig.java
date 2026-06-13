@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static java.util.Optional.ofNullable;
 
 public class ClusterConfig {
 
@@ -24,24 +27,37 @@ public class ClusterConfig {
         refreshNodes();
     }
 
-    public void refreshNodes() {
-        List<SwarmNode> nodes = managerClient.listSwarmNodesCmd().exec();
-        nodeIps.clear();
-        for (SwarmNode node : nodes) {
-            String id = node.getId();
-            String ip = node.getStatus().getAddress();
-            nodeIps.put(id, ip);
+    public synchronized void refreshNodes() {
+        try {
+            List<SwarmNode> nodes = managerClient.listSwarmNodesCmd().exec();
+            if (nodes == null) return;
+
+            Map<String, String> freshNodes = nodes.stream()
+                    .filter(node -> node.getStatus() != null)
+                    .filter(node -> node.getStatus().getAddress() != null)
+                    .collect(Collectors.toMap(
+                            SwarmNode::getId,
+                            node -> node.getStatus().getAddress(),
+                            (_, replacement) -> replacement
+                    ));
+
+            nodeIps.keySet().retainAll(freshNodes.keySet());
+            nodeIps.putAll(freshNodes);
+
+            log.debug("Discovered {} nodes from Swarm API", nodeIps.size());
+        } catch (Exception e) {
+            log.error("Failed to refresh nodes", e);
         }
-        log.debug("Discovered {} nodes from Swarm API", nodeIps.size());
     }
 
     public String getHostForNode(String nodeId) {
-        String ip = nodeIps.get(nodeId);
-        if (ip == null) {
-            refreshNodes();
-            ip = nodeIps.get(nodeId);
-        }
-        return ip != null ? dockerUri(ip) : null;
+        return ofNullable(nodeIps.get(nodeId))
+                .or(() -> {
+                    refreshNodes();
+                    return ofNullable(nodeIps.get(nodeId));
+                })
+                .map(this::dockerUri)
+                .orElse(null);
     }
 
     private String dockerUri(String ip) {

@@ -35,7 +35,7 @@ jar {
     exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
 }
 
-task runOrch(type: JavaExec) {
+tasks.register('runOrch', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.lhamacorp.Main'
 }
