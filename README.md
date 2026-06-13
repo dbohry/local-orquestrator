@@ -1,3 +1,8 @@
+[![Build](https://github.com/dbohry/local-orquestrator/actions/workflows/build.yml/badge.svg)](https://github.com/dbohry/local-orquestrator/actions/workflows/build.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/dbohry/local-orquestrator)](https://hub.docker.com/r/dbohry/local-orquestrator)
+[![Docker Image Size](https://img.shields.io/docker/image-size/dbohry/local-orquestrator/latest)](https://hub.docker.com/r/dbohry/local-orquestrator)
+[![Java](https://img.shields.io/badge/Java-25-orange)](https://jdk.java.net/25/)
+
 # Local Orchestrator
 
 A lightweight auto-scaler for Docker Swarm services. Monitors CPU usage across cluster nodes and scales services up or down based on configurable thresholds.
