@@ -8,6 +8,9 @@ public record ScalingPolicy(int min, int max, double scaleUpCpu, double scaleDow
         if (currentReplicas < min) {
             return Math.min(currentReplicas + 1, min);
         }
+        if (currentReplicas > max) {
+            return Math.max(currentReplicas - 1, max);
+        }
         if (avgCpu > scaleUpCpu && currentReplicas < max) {
             return Math.min(currentReplicas + 1, max);
         } else if (avgCpu < scaleDownCpu && currentReplicas > min) {

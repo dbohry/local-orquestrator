@@ -45,6 +45,18 @@ class ScalingPolicyTest {
     }
 
     @Test
+    void enforceMaxReplicas_whenHighCpu() {
+        var policy = new ScalingPolicy(1, 3, 70, 30);
+        assertEquals(3, policy.decide(3, 95));
+    }
+
+    @Test
+    void scaleDownFromOverMax_whenBelowMinThreshold() {
+        var policy = new ScalingPolicy(1, 3, 70, 30);
+        assertEquals(3, policy.decide(4, 50));
+    }
+
+    @Test
     void fromLabels_usesDefaults() {
         var policy = ScalingPolicy.fromLabels(Map.of());
         assertEquals(1, policy.min());
