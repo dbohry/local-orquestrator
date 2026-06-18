@@ -5,6 +5,9 @@ import java.util.Map;
 public record ScalingPolicy(int min, int max, double scaleUpCpu, double scaleDownCpu) {
 
     public long decide(long currentReplicas, double avgCpu) {
+        if (currentReplicas < min) {
+            return Math.min(currentReplicas + 1, min);
+        }
         if (avgCpu > scaleUpCpu && currentReplicas < max) {
             return Math.min(currentReplicas + 1, max);
         } else if (avgCpu < scaleDownCpu && currentReplicas > min) {

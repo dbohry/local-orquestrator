@@ -39,6 +39,12 @@ class ScalingPolicyTest {
     }
 
     @Test
+    void scaleUpToMin_whenBelowMinReplicas() {
+        var policy = new ScalingPolicy(2, 5, 70, 30);
+        assertEquals(2, policy.decide(1, 10));
+    }
+
+    @Test
     void fromLabels_usesDefaults() {
         var policy = ScalingPolicy.fromLabels(Map.of());
         assertEquals(1, policy.min());
