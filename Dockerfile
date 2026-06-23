@@ -1,7 +1,7 @@
 FROM eclipse-temurin:25-jdk-alpine AS jlink
 
 RUN jlink \
-    --add-modules java.base,java.logging,java.naming,java.management \
+    --add-modules java.base,java.logging,java.management \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
