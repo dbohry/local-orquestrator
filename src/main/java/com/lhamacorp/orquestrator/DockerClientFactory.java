@@ -3,7 +3,7 @@ package com.lhamacorp.orquestrator;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.github.dockerjava.zerodep.ZerodepDockerHttpClient;
 
 import java.net.URI;
 import java.util.Map;
@@ -21,7 +21,7 @@ public class DockerClientFactory {
         var config = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withDockerHost(dockerHost)
                 .build();
-        var httpClient = new ApacheDockerHttpClient.Builder()
+        var httpClient = new ZerodepDockerHttpClient.Builder()
                 .dockerHost(URI.create(dockerHost))
                 .build();
         return DockerClientImpl.getInstance(config, httpClient);
