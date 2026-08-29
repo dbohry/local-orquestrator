@@ -23,7 +23,7 @@ public class Main {
     static void main() {
         DockerClientFactory clientFactory = new DockerClientFactory();
         DockerClient managerClient = clientFactory.forHost(MANAGER_HOST);
-        ClusterConfig clusterConfig = new ClusterConfig(managerClient);
+        ClusterConfig clusterConfig = new ClusterConfig(managerClient, clientFactory);
         ContainerStatsCollector statsCollector = new ContainerStatsCollector(clientFactory, clusterConfig);
         AutoScaler autoScaler = new AutoScaler(managerClient, statsCollector);
 

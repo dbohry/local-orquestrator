@@ -31,8 +31,21 @@ public class AutoScaler {
     }
 
     public void evaluate() {
-        List<Service> services = managerClient.listServicesCmd().exec();
-        services.forEach(this::evaluateService);
+        try {
+            List<Service> services = managerClient.listServicesCmd().exec();
+            services.forEach(this::safeEvaluateService);
+        } catch (Exception e) {
+            log.error("Failed to evaluate services", e);
+        }
+    }
+
+    private void safeEvaluateService(Service service) {
+        try {
+            evaluateService(service);
+        } catch (Exception e) {
+            String name = service.getSpec() != null ? service.getSpec().getName() : service.getId();
+            log.error("Failed to evaluate service {}: {}", name, e.getMessage(), e);
+        }
     }
 
     private void evaluateService(Service service) {

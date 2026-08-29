@@ -18,11 +18,13 @@ public class ClusterConfig {
     private static final int DEFAULT_DOCKER_PORT = 2375;
 
     private final DockerClient managerClient;
+    private final DockerClientFactory clientFactory;
     private final int dockerPort;
     private final Map<String, String> nodeIps = new ConcurrentHashMap<>();
 
-    public ClusterConfig(DockerClient managerClient) {
+    public ClusterConfig(DockerClient managerClient, DockerClientFactory clientFactory) {
         this.managerClient = managerClient;
+        this.clientFactory = clientFactory;
         this.dockerPort = Integer.parseInt(System.getenv().getOrDefault("DOCKER_API_PORT", String.valueOf(DEFAULT_DOCKER_PORT)));
         refreshNodes();
     }
@@ -40,6 +42,13 @@ public class ClusterConfig {
                             node -> node.getStatus().getAddress(),
                             (_, replacement) -> replacement
                     ));
+
+            nodeIps.forEach((nodeId, oldIp) -> {
+                String newIp = freshNodes.get(nodeId);
+                if (newIp == null || !newIp.equals(oldIp)) {
+                    clientFactory.close(dockerUri(oldIp));
+                }
+            });
 
             nodeIps.keySet().retainAll(freshNodes.keySet());
             nodeIps.putAll(freshNodes);
