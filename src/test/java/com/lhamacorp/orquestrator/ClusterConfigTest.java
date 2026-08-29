@@ -22,7 +22,7 @@ class ClusterConfigTest {
                 swarmNode("node-2", "192.168.1.11")
         ));
 
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         assertEquals("tcp://192.168.1.10:2375", config.getHostForNode("node-1"));
         assertEquals("tcp://192.168.1.11:2375", config.getHostForNode("node-2"));
@@ -34,7 +34,7 @@ class ClusterConfigTest {
                 swarmNode("node-1", "192.168.1.10")
         ));
 
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         assertNull(config.getHostForNode("unknown-node"));
     }
@@ -47,7 +47,7 @@ class ClusterConfigTest {
         when(nullStatusNode.getStatus()).thenReturn(null);
 
         DockerClient client = mockClientWithNodes(List.of(goodNode, nullStatusNode));
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         assertEquals("tcp://10.0.0.1:2375", config.getHostForNode("node-1"));
         assertNull(config.getHostForNode("node-2"));
@@ -63,7 +63,7 @@ class ClusterConfigTest {
         when(status.getAddress()).thenReturn(null);
 
         DockerClient client = mockClientWithNodes(List.of(goodNode, nullAddrNode));
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         assertEquals("tcp://10.0.0.1:2375", config.getHostForNode("node-1"));
         assertNull(config.getHostForNode("node-3"));
@@ -76,7 +76,7 @@ class ClusterConfigTest {
         when(client.listSwarmNodesCmd()).thenReturn(cmd);
         when(cmd.exec()).thenReturn(null);
 
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         assertNull(config.getHostForNode("any-node"));
     }
@@ -88,7 +88,7 @@ class ClusterConfigTest {
         when(client.listSwarmNodesCmd()).thenReturn(cmd);
         when(cmd.exec()).thenThrow(new RuntimeException("connection refused"));
 
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         assertNull(config.getHostForNode("any-node"));
     }
@@ -102,7 +102,7 @@ class ClusterConfigTest {
         SwarmNode node1 = swarmNode("node-1", "10.0.0.1");
         SwarmNode node2 = swarmNode("node-2", "10.0.0.2");
         when(cmd.exec()).thenReturn(List.of(node1, node2));
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         assertEquals("tcp://10.0.0.1:2375", config.getHostForNode("node-1"));
         assertEquals("tcp://10.0.0.2:2375", config.getHostForNode("node-2"));
@@ -123,7 +123,7 @@ class ClusterConfigTest {
 
         SwarmNode node1 = swarmNode("node-1", "10.0.0.1");
         when(cmd.exec()).thenReturn(List.of(node1));
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         SwarmNode node1Again = swarmNode("node-1", "10.0.0.1");
         SwarmNode node2 = swarmNode("node-2", "10.0.0.2");
@@ -138,7 +138,7 @@ class ClusterConfigTest {
         SwarmNode duplicate = swarmNode("node-1", "10.0.0.99");
 
         DockerClient client = mockClientWithNodes(List.of(first, duplicate));
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
 
         assertEquals("tcp://10.0.0.99:2375", config.getHostForNode("node-1"));
     }
@@ -151,7 +151,7 @@ class ClusterConfigTest {
 
         SwarmNode node1 = swarmNode("node-1", "10.0.0.1");
         when(cmd.exec()).thenReturn(List.of(node1));
-        ClusterConfig config = new ClusterConfig(client);
+        ClusterConfig config = new ClusterConfig(client, new DockerClientFactory());
         assertEquals("tcp://10.0.0.1:2375", config.getHostForNode("node-1"));
 
         SwarmNode node1Updated = swarmNode("node-1", "10.0.0.99");
